@@ -162,6 +162,11 @@ def index():
     )
 
 
+@app.get("/<any('favicon.ico', 'apple-touch-icon.png'):name>")
+def root_icon(name):
+    return app.send_static_file(name)  # browsers and iOS request these from the root by default
+
+
 @app.get("/events")
 def events():
     stream = (f"data: {s}\n\n" if s else ": ping\n\n" for s in live.listen())

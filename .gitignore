@@ -1,18 +1,12 @@
-# Byte-compiled / optimized / DLL files
 __pycache__/
-*.py[cod]
-*.pyo
-venv/
+*.egg-info/
 .venv/
-.venv-dev/
-*.log
-gardyn.log
-simulator/.sim/
-# If using Jython
-*.class
-.env
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+build/
+dist/
 
-# Browser-validation artifacts
-.playwright-mcp/
-garden-*.png
-timelapse/
+# garden-web runtime state
+web/schedule.json
+web/cycle.json

@@ -1,0 +1,21 @@
+[Unit]
+Description=Garden API (lean)
+After=network.target
+
+[Service]
+# Change "garden" to the Pi user that owns ~/garden-api and has uv installed.
+User=garden
+WorkingDirectory=/home/garden/garden-api
+# --frozen: install exactly what uv.lock pins, never re-resolve at startup.
+ExecStart=/home/garden/.local/bin/uv run --frozen garden-api
+# Runs after every stop *and* crash: the pump pin must never be left high.
+ExecStopPost=/home/garden/.local/bin/uv run --frozen garden-api --pump-off
+EnvironmentFile=-/etc/garden-api.env
+Restart=always
+RestartSec=1
+
+# Device access: gpio (/dev/gpiomem, /sys/class/pwm), i2c (/dev/i2c-1), video (cameras).
+SupplementaryGroups=gpio i2c video
+
+[Install]
+WantedBy=multi-user.target

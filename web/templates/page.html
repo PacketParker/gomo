@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Garden</title>
+<link rel="stylesheet" href="/static/style.css">
+<script src="/static/app.js" defer></script>
+
+<header>
+  <h1>Garden</h1>
+  <span id="status" class="muted">Connecting…</span>
+</header>
+
+<div id="reminders" class="cycle"></div>
+
+<main>
+  <section class="light">
+    <div class="head"><h2>Light</h2><span class="error"></span></div>
+    <form method="post" action="/light" id="light-off"></form>
+    <form method="post" action="/light" class="level">
+      <p class="value"><output id="light-value">—</output><small>%</small></p>
+      <div class="row">
+        <button form="light-off" name="value" value="0">Off</button>
+        <input id="light-range" type="range" name="value" min="0" max="100" value="0" aria-label="Brightness">
+      </div>
+    </form>
+  </section>
+
+  <section class="pump">
+    <div class="head"><h2>Pump</h2><span class="error"></span><span id="power"></span></div>
+    <p class="value" id="pump-value"><span id="pump-state">—</span><small id="countdown" title="Until auto-off"></small></p>
+    <form method="post" action="/pump">
+      <button id="pump-toggle" name="pump" value="on" class="toggle">Turn on</button>
+      <button name="seconds" value="30">Run 30s</button>
+      <button name="seconds" value="60">1 min</button>
+      <button name="seconds" value="300">5 min</button>
+    </form>
+  </section>
+
+  <section class="water">
+    <div class="head"><h2>Water</h2><span class="error"></span></div>
+    <p class="value"><span id="gallons">—</span><small>gal</small></p>
+    <div class="bar" id="water-bar"><span></span></div>
+    <p class="note"><span id="water-note"></span> <strong id="water-low" class="low" hidden>· Low</strong></p>
+  </section>
+
+  <section class="schedule wide">
+    <div class="head"><h2>Schedule</h2><span class="error"></span></div>
+    <p class="value" id="schedule-value"><span id="schedule-state">—</span><small id="schedule-until"></small></p>
+    <p class="note" id="schedule-detail"></p>
+    <form method="post" action="/schedule">
+      <button id="schedule-toggle" name="enabled" value="on" class="toggle">Turn on</button>
+      {% for key, preset in presets.items() if key != "vacation" %}
+        <button name="preset" value="{{ key }}" data-preset>{{ preset.label }}</button>
+      {% endfor %}
+    </form>
+    <form method="post" action="/schedule">
+      <label class="note">Away until <input type="date" name="until" value="{{ vacation_until }}" required></label>
+      <button name="preset" value="vacation" data-preset>Vacation</button>
+    </form>
+  </section>
+
+  <section class="cycle wide">
+    <div class="head"><h2>Grow cycle</h2><span class="error"></span></div>
+    <p class="value"><span id="cycle-day">—</span><small id="cycle-stage"></small></p>
+    <p class="note" id="cycle-detail"></p>
+    <form method="post" action="/cycle">
+      <label class="note">Started <input type="date" id="cycle-started" name="started" value="{{ today }}" max="{{ today }}" required></label>
+      <button name="action" value="set">Change date</button>
+      <button name="action" value="new" class="toggle">Start new cycle</button>
+    </form>
+  </section>
+</main>
+
+<div class="photos">
+  <img src="/photo/upper" alt="Upper camera" fetchpriority="low">
+  <img src="/photo/lower" alt="Lower camera" fetchpriority="low">
+</div>

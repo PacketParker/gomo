@@ -1,11 +1,13 @@
-# garden-api
+# gomo API (garden-api)
 
-A lean replacement for the [garden-of-eden](https://github.com/iot-root/garden-of-eden)
-REST API on a Gardyn's Raspberry Pi. Pure standard library at runtime: no
-Flask, no gpiozero, no `pigpiod`, no MQTT service, no cron jobs.
+The Raspberry Pi half of [gomo](..): a REST API on the Gardyn's Pi that the
+[web app](../web) (or anything else that speaks HTTP) calls. It replaces the
+[garden-of-eden](https://github.com/iot-root/garden-of-eden) API and is pure
+standard library at runtime: no Flask, no gpiozero, no `pigpiod`, no MQTT
+service, no cron jobs.
 
-The Pi only does what the hardware strictly needs. Scheduling, dashboards and
-history live off-Pi and talk to this API.
+The Pi only does what the hardware strictly needs. Scheduling, the dashboard
+and reminders live in the web app.
 
 | Device | How it's driven | Idle cost |
 |---|---|---|
@@ -119,8 +121,8 @@ list with defaults. Invalid values stop startup with a clear message.
 
 ## Scheduling off-Pi
 
-Anything that can send an HTTP request can run the schedule. For example, crontab on another
-machine:
+The [web app](../web) runs the schedule for you. Without it, anything that can
+send an HTTP request can do the job. For example, crontab on another machine:
 
 ```cron
 0 6   * * *  curl -s -X POST -d '{"value":70}' http://gardyn.local:5000/light/brightness

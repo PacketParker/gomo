@@ -1,0 +1,9 @@
+.venv/
+__pycache__/
+*.json
+*.json.tmp
+Dockerfile
+compose.yaml
+.dockerignore
+README.md
+.env

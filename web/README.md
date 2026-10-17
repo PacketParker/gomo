@@ -1,26 +1,69 @@
-# Garden
+# gomo web app
 
-Status page and controls for a Gardyn running [garden-api](../api).
-Flask, plain HTML/CSS, and a small script for live updates.
+The companion half of [gomo](..): status page, controls, schedule and
+grow-cycle reminders for a Gardyn running the [gomo API](../api). It runs on
+any machine that can reach the Pi, not on the Pi itself. Flask, plain
+HTML/CSS, and a small script for live updates.
+
+## Run with Docker
+
+[`compose.yaml`](compose.yaml) is all you need. It builds the image straight
+from the repository, so you don't need a clone:
+
+```bash
+curl -O https://git.pkrm.dev/gomo/plain/web/compose.yaml
+GARDEN_URL=http://192.168.1.50:5000 TZ=America/Chicago docker compose up -d
+```
+
+Then open `http://<this machine>:8080`. To update, run
+`docker compose build --pull && docker compose up -d`. If you're working from a
+clone, change `build:` to `.` so it builds your local files. Put the settings in a `.env` file next
+to `compose.yaml` to keep them, and add any variables from the table below to
+`environment:` in [`compose.yaml`](compose.yaml).
+
+- **Use the Pi's IP address.** `gardyn.local` is an mDNS name, and containers
+  usually can't resolve it.
+- **Set `TZ`**, for example `America/Chicago`. The schedule runs on the
+  container's clock, and that clock is UTC unless you set `TZ`.
+- **State lives in the `data` volume** (`/data/schedule.json` and
+  `/data/cycle.json`), so rebuilding the container keeps it. If you
+  bind-mount a host directory there instead, make it writable by the
+  container's user (`chown` it to the uid reported by
+  `docker compose run --rm web id -u`).
+- **Run one container only.** The scheduler runs inside the app process, so a
+  second copy would run every schedule step twice.
+
+Without compose:
+
+```bash
+docker build -t gomo-web https://git.pkrm.dev/gomo.git#main:web
+docker run -d --name gomo-web --restart unless-stopped -p 8080:8080 \
+  -e GARDEN_URL=http://192.168.1.50:5000 -e TZ=America/Chicago \
+  -v gomo-data:/data gomo-web
+```
+
+## Run without Docker
 
 ```bash
 python -m venv .venv && .venv/bin/pip install -r requirements.txt
 .venv/bin/python app.py      # http://localhost:8080
 ```
 
+## Settings
+
 | Variable             | Default                     |                                          |
 |----------------------|-----------------------------|------------------------------------------|
-| `GARDEN_URL`         | `http://gardyn.local:5000`  | garden-api base URL                      |
+| `GARDEN_URL`         | `http://gardyn.local:5000`  | gomo API base URL                        |
 | `GARDEN_API_KEY`     |                             | sent as `X-API-Key`                      |
 | `TANK_GALLONS`       | `5`                         | for the fill bar                         |
 | `WATER_LOW_GALLONS`  | `1.5`                       | warn at or below this; `0` to disable    |
 | `POLL_SECONDS`       | `2`                         | how often light/pump/power refresh       |
 | `WATER_POLL_SECONDS` | `30`                        | how often the water level refreshes      |
-| `SCHEDULE_FILE`      | `schedule.json` (app dir)   | where the schedule choice is saved       |
-| `CYCLE_FILE`         | `cycle.json` (app dir)      | where the grow cycle is saved            |
+| `SCHEDULE_FILE`      | `schedule.json` (app dir)   | where the schedule choice is saved; `/data/schedule.json` in Docker |
+| `CYCLE_FILE`         | `cycle.json` (app dir)      | where the grow cycle is saved; `/data/cycle.json` in Docker |
 | `PORT` / `HOST`      | `8080` / `0.0.0.0`          |                                          |
 
-How it works:
+## How it works
 
 - **Live over Server-Sent Events** (`/events`). While at least one page is
   open, one background thread polls the API and pushes a snapshot to every

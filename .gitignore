@@ -10,3 +10,4 @@ dist/
 # garden-web runtime state
 web/schedule.json
 web/cycle.json
+web/.env

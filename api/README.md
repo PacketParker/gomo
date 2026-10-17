@@ -71,45 +71,37 @@ src/garden_api/
     ├── power.py       INA219 over i2c-dev
     ├── ultrasonic.py  HC-SR04
     └── camera.py      fswebcam
-deploy/                systemd unit + example environment file
+install.sh             Sets up the Pi and installs the systemd service
+deploy/                Example environment file
 ```
 
 ## Install on the Pi
 
-The included systemd unit runs as user `garden` from `/home/garden/garden-api`
-using uv; edit `deploy/garden-api.service` for a different user or path.
-
 Supports Pi Zero / Zero 2 / 3 / 4 (BCM283x GPIO registers), which covers
 Gardyn hardware. Not Pi 5. Needs Python 3.9+.
 
+Clone the repo and run the installer as the user the service should run as:
+
 ```bash
-# 1. Stop the old stack and remove its schedule and auto-update permissions
-sudo systemctl disable --now garden-api mqtt garden-autoupdate.timer pigpiod
-sudo systemctl disable --now mosquitto          # unless something else uses it
-crontab -l | grep -v '# garden-of-eden' | crontab -
-sudo rm -f /etc/sudoers.d/garden-autoupdate
+sudo apt install -y git
+git clone https://git.pkrm.dev/gomo ~/gomo
+~/gomo/api/install.sh
+```
 
-# 2. Hardware PWM on GPIO18: load it now, and add it to config.txt for future boots.
-#    I2C is already enabled if the original setup.sh ran.
-#    Bookworm: /boot/firmware/config.txt — Bullseye: /boot/config.txt
-sudo dtoverlay pwm pin=18 func=2
-echo 'dtoverlay=pwm,pin=18,func=2' | sudo tee -a /boot/firmware/config.txt
+[`install.sh`](install.sh) enables hardware PWM on GPIO18 (adding the overlay
+to `config.txt` only if it's missing) and I2C, installs `fswebcam` and uv,
+adds you to the `gpio`, `i2c` and `video` groups, copies the example
+`/etc/garden-api.env` if there isn't one, and writes a systemd unit that runs
+as you from `~/gomo/api`. It's safe to re-run.
 
-# 3. Install, as the service user, with the project at ~/garden-api.
-#    The service runs `uv run --frozen`, which needs uv.lock to exist.
-sudo apt install -y fswebcam
-curl -LsSf https://astral.sh/uv/install.sh | sh   # installs uv to ~/.local/bin/uv
-cd ~/garden-api && ~/.local/bin/uv lock           # skip if uv.lock is already committed
-sudo usermod -aG gpio,i2c,video "$USER"           # device access for manual runs too
-sudo install -m 644 deploy/garden-api.env /etc/garden-api.env       # edit as needed
-sudo install -m 644 deploy/garden-api.service /etc/systemd/system/
-sudo systemctl daemon-reload
-sudo systemctl enable --now garden-api
+Check it:
 
-# 4. Check
+```bash
 curl http://localhost:5000/light/brightness
 journalctl -u garden-api      # lists any hardware that failed to initialize
 ```
+
+To update: `cd ~/gomo && git pull && sudo systemctl restart garden-api`.
 
 `pigpiod` must stay off. It takes over the PWM hardware that the light uses.
 

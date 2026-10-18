@@ -19,7 +19,7 @@ USER garden
 VOLUME /data
 EXPOSE 8080
 
-# The Flask server stops cleanly on Ctrl-C; plain SIGTERM would leave PID 1 hanging.
+# The Flask server stops cleanly on SIGINT. As PID 1, it ignores SIGTERM.
 STOPSIGNAL SIGINT
-# One process only: the scheduler and live updates are in-process threads.
+# Run one process only. The scheduler and live updates are threads in it.
 CMD ["python", "app.py"]

@@ -64,7 +64,7 @@ class Garden:
         return garden
 
     def shutdown(self) -> None:
-        """Leave the hardware safe: the pump must never keep running unattended."""
+        """Put the hardware in a safe state. The pump must not run unattended."""
         if self.pump is not None:
             self.pump.off()
 
@@ -72,6 +72,6 @@ class Garden:
 def _try(name: str, factory: Callable[[], T]) -> T | None:
     try:
         return factory()
-    except Exception as exc:  # any failure here just means "not available"
+    except Exception as exc:  # any failure means the device is not available
         logger.warning("%s unavailable: %s", name, exc)
         return None

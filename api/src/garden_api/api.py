@@ -1,8 +1,8 @@
 """Routes, input validation, and response shapes.
 
-Transport-agnostic: takes a method, a normalized path and a raw body, returns a
-Response. Light, sensor and camera paths match the garden-of-eden REST API; the
-pump is on/off only (GET /pump, POST /pump/on, POST /pump/off).
+Independent of the transport: takes a method, a normalized path and a raw body,
+and returns a Response. Light, sensor and camera paths are compatible with the
+garden-of-eden REST API.
 """
 
 from __future__ import annotations
@@ -96,8 +96,8 @@ class Api:
         return Response.json({"on": pump.is_on, "seconds_left": pump.seconds_left})
 
     def pump_on(self, body: Json) -> Response:
-        """Optional {"seconds": N} limits the run; without it the pump runs until
-        MAX_PUMP_RUN_SECONDS. Either way it stops by itself."""
+        """Optional {"seconds": N} sets the run time. The default and the limit
+        are MAX_PUMP_RUN_SECONDS. The pump stops automatically."""
         limit = self._settings.max_pump_run_seconds
         seconds = _integer(body, "seconds", 1, limit) if "seconds" in body else None
         ran = _require(self._garden.pump, "pump").on(seconds)

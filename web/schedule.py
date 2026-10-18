@@ -1,13 +1,11 @@
-"""Light and pump schedule, run by this app in a background thread (no cron).
+"""Light and pump schedule, run by a background thread.
 
-The presets carry over garden-of-eden's values. The scheduler works out what
-the light should be right now (with the sunrise and sunset fade) and sends it
-only when that changes. A manual light change holds until the next on or off
-time. Each pump run is started at its time, and up to two minutes late if the
-garden was briefly unreachable. Between changes the thread sleeps until the
-next one is due: an on/off time, a pump run, midnight, or the next 1% step of a
-fade. The choice lives in a small JSON file so it survives restarts. Times are
-this server's local time.
+The thread sends the scheduled light level, with a fade at the on and off
+times, only when the level changes. A manual light change holds until the next
+on or off time. Each pump run starts at its time, or up to two minutes late if
+the garden does not respond. Between changes, the thread sleeps until the next
+on/off time, pump run, midnight or 1% fade step. The selection is saved to a
+JSON file. Times use the server's local time zone.
 """
 
 import datetime as dt
@@ -17,8 +15,8 @@ from dataclasses import dataclass
 from store import load_json, save_json
 
 PUMP_GRACE_MINUTES = 2
-RETRY_SECONDS = 30  # when the garden didn't answer
-MAX_SLEEP_SECONDS = 3600  # re-check hourly so clock changes can't skip an event
+RETRY_SECONDS = 30  # after the garden does not respond
+MAX_SLEEP_SECONDS = 3600  # re-check hourly so that clock changes do not skip an event
 DAY = 24 * 60
 
 
@@ -49,8 +47,8 @@ def minute_of_day(hhmm):
 
 
 def _light_position(preset, now_minutes):
-    """Minutes since the light's on time, and the on-to-off window length.
-    Windows may cross midnight."""
+    """Minutes since the on time, and the length of the on-to-off window.
+    The window can cross midnight."""
     since_on = (now_minutes - minute_of_day(preset.light_on)) % DAY
     window = (minute_of_day(preset.light_off) - minute_of_day(preset.light_on)) % DAY
     return since_on, window
@@ -63,7 +61,7 @@ def fading(preset, now_minutes):
 
 
 def light_level(preset, now_minutes):
-    """Brightness the light should have at ``now_minutes`` past midnight.
+    """Scheduled brightness at ``now_minutes`` past midnight.
     The fade starts at the on and off times."""
     since_on, window = _light_position(preset, now_minutes)
     fade = preset.fade_minutes
@@ -100,8 +98,8 @@ def seconds_until_next_change(preset, now, follow_fade=True):
 class Scheduler:
     def __init__(self, path, send, on_change):
         """``send(path, body)`` posts to the garden API and returns True on
-        success; ``on_change()`` is called whenever the garden or the schedule
-        changes, so open pages update."""
+        success. ``on_change()`` updates open pages after the garden or the
+        schedule changes."""
         self._path = path
         self._send = send
         self._on_change = on_change
@@ -170,13 +168,13 @@ class Scheduler:
             self._wake.clear()
 
     def tick(self, now=None):
-        """Bring the garden in line with the schedule. Returns the seconds until
-        anything needs doing again, or None while the schedule is off."""
+        """Apply the schedule to the garden. Return the seconds until the next
+        action, or None when the schedule is off."""
         now = now or dt.datetime.now()
         with self._lock:
             self._end_vacation_if_over(now.date())
             if not self._state["enabled"]:
-                self._sent_light = None  # re-apply the light when turned back on
+                self._sent_light = None  # re-apply the light when the schedule is turned on
                 return None
             preset = PRESETS[self._state["preset"]]
             now_minutes = now.hour * 60 + now.minute + now.second / 60
@@ -220,7 +218,7 @@ class Scheduler:
             self._save()
 
     def _changed(self):
-        """Persist, apply the new schedule right away, and update open pages."""
+        """Save, apply the new schedule immediately, and update open pages."""
         self._save()
         self._sent_light = None
         self._held_since = None

@@ -1,6 +1,6 @@
 """HC-SR04 ultrasonic sensor measuring the distance down to the water surface.
 
-Measures only when asked: no background polling.
+Measures only on request. There is no background polling.
 """
 
 from __future__ import annotations
@@ -13,7 +13,7 @@ from .gpio import Gpio
 
 _TRIGGER_PULSE_SECONDS = 0.00001
 _ECHO_TIMEOUT_SECONDS = 0.04  # longer than the sensor's ~38 ms "no echo" pulse
-_SETTLE_SECONDS = 0.03  # let echoes die down between pings
+_SETTLE_SECONDS = 0.03  # lets echoes stop between pings
 _HALF_SPEED_OF_SOUND_CM_S = 17150
 
 

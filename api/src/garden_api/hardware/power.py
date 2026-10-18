@@ -15,10 +15,10 @@ _REG_CONFIG = 0x00
 _REG_SHUNT_VOLTAGE = 0x01
 _REG_BUS_VOLTAGE = 0x02
 
-# 32 V bus range, +/-320 mV shunt range, continuous conversion, and both ADCs
-# averaging 128 samples (68 ms). The pump is PWM-driven at 50 Hz, so a single
-# 0.5 ms sample mostly lands between pulses and reads ~0; averaging over several
-# 20 ms cycles reports the mean current instead.
+# 32 V bus range, +/-320 mV shunt range, continuous conversion, and 128-sample
+# averaging (68 ms) on both ADCs. The pump PWM runs at 50 Hz. A single 0.5 ms
+# sample usually falls between pulses and reads ~0. Averaging over several
+# 20 ms cycles gives the mean current.
 _BUS_RANGE_32V = 1 << 13
 _SHUNT_RANGE_320MV = 0b11 << 11
 _BUS_ADC_128_SAMPLES = 0b1111 << 7

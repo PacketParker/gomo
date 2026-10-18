@@ -74,7 +74,7 @@ class Settings:
 
     @classmethod
     def from_env(cls, environ: Mapping[str, str] = os.environ) -> Settings:
-        values: dict[str, Any] = {}  # each value matches its field's type
+        values: dict[str, Any] = {}
         for field in fields(cls):
             name = field.name.upper()
             raw = environ.get(name, "").strip()

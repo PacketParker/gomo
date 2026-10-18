@@ -1,5 +1,5 @@
-# gomo web app. This file is all you need: Docker builds the image straight
-# from the repository. Working from a clone instead? Set `build: .`
+# gomo web app. Docker builds the image from the repository.
+# To build from a local clone, set `build: .`
 services:
   web:
     build: https://git.pkrm.dev/gomo.git#main:web
@@ -11,7 +11,7 @@ services:
     ports:
       - "8080:8080"
     environment:
-      # Use the Pi's IP if gardyn.local doesn't resolve inside containers (mDNS usually doesn't).
+      # mDNS names such as gardyn.local usually do not resolve in containers. Use the Pi's IP.
       GARDEN_URL: ${GARDEN_URL:-http://gardyn.local:5000}
       GARDEN_API_KEY: ${GARDEN_API_KEY:-}
       # The schedule runs in this time zone.

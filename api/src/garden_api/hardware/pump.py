@@ -1,11 +1,10 @@
-"""Water pump on a plain GPIO pin: on or off, nothing in between.
+"""Water pump on a GPIO pin, either on or off.
 
-"On" drives the pin with software PWM at a fixed ``duty``, so no request can
-run the pump harder than configured (default 70%: lower duties spin the pump
-without lifting water up the tower).
+"On" drives the pin with software PWM at a fixed ``duty``. The default is 70%.
+At lower duties the pump spins but does not lift water up the tower.
 
-The PWM thread exists only while the pump is on. Every start arms an auto-off
-timer, so the pump can never run longer than ``max_run_seconds``.
+The PWM thread runs only while the pump is on. Each start sets an auto-off
+timer, so the pump never runs longer than ``max_run_seconds``.
 """
 
 from __future__ import annotations
@@ -51,8 +50,8 @@ class Pump:
         return self._pwm_thread is not None
 
     def on(self, run_seconds: float | None = None) -> float:
-        """Start (or keep) the pump running; it stops by itself after
-        ``run_seconds``, capped at ``max_run_seconds``. Returns the run time."""
+        """Start the pump, or keep it running. It stops automatically after
+        ``run_seconds``, capped at ``max_run_seconds``. Return the run time."""
         seconds = min(run_seconds or self.max_run_seconds, self.max_run_seconds)
         with self._cond:
             self._on = True
@@ -81,8 +80,8 @@ class Pump:
             timer.start()
 
     def _run_pwm(self) -> None:
-        # Pin writes happen only while holding the lock; off() writes the pin
-        # low itself, so this loop just exits once the pump is off.
+        # All pin writes occur while the lock is held. off() sets the pin low,
+        # so this loop only exits when the pump is off.
         high_time = self._period * self._duty / 100
         with self._cond:
             while self._on:
@@ -96,8 +95,8 @@ class Pump:
 
 
 def force_pin_low(gpiomem: str, pin: int) -> None:
-    """Drive the pump pin low without any other state. Used by systemd after
-    the service stops or crashes."""
+    """Set the pump pin low without other state. systemd runs this after the
+    service stops or crashes."""
     gpio = Gpio(gpiomem)
     try:
         gpio.write(pin, False)

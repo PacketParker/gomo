@@ -4,7 +4,7 @@
 # Run as the user the service should run as, from a clone of gomo:
 #   git clone https://git.pkrm.dev/gomo ~/gomo && ~/gomo/api/install.sh
 #
-# Safe to re-run: every step checks before changing anything.
+# Safe to run again. Each step checks the current state before it makes changes.
 set -euo pipefail
 
 if [[ $EUID -eq 0 ]]; then
@@ -47,7 +47,7 @@ echo "==> Device access for $user"
 sudo usermod -aG gpio,i2c,video "$user"
 
 echo "==> Service"
-# Never overwrite an env file that may have been edited.
+# Do not overwrite an existing env file. It can contain edits.
 if [[ ! -f /etc/garden-api.env ]]; then
     sudo install -m 644 "$api_dir/deploy/garden-api.env" /etc/garden-api.env
 fi
@@ -59,9 +59,9 @@ After=network.target
 [Service]
 User=$user
 WorkingDirectory=$api_dir
-# --frozen: install exactly what uv.lock pins, never re-resolve at startup.
+# --frozen installs the versions in uv.lock and does not resolve again at startup.
 ExecStart=$uv run --frozen garden-api
-# Runs after every stop *and* crash: the pump pin must never be left high.
+# Runs after each stop or crash. The pump pin must not stay high.
 ExecStopPost=$uv run --frozen garden-api --pump-off
 EnvironmentFile=-/etc/garden-api.env
 Restart=always

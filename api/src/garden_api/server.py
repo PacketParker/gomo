@@ -1,6 +1,6 @@
 """HTTP transport: authentication, request limits, keep-alive.
 
-Built on the standard library's http.server. Routing and validation live in
+Uses the standard library's http.server. Routing and validation are in
 api.py.
 """
 
@@ -30,8 +30,8 @@ class GardenServer(ThreadingHTTPServer):
 
 class RequestHandler(BaseHTTPRequestHandler):
     server: GardenServer
-    protocol_version = "HTTP/1.1"  # keep-alive: no new TCP handshake per request
-    disable_nagle_algorithm = True  # don't delay small responses
+    protocol_version = "HTTP/1.1"  # keep-alive, so there is no TCP handshake per request
+    disable_nagle_algorithm = True  # send small responses without delay
     timeout = IDLE_TIMEOUT_SECONDS
     server_version = "garden-api"
     sys_version = ""
@@ -44,7 +44,7 @@ class RequestHandler(BaseHTTPRequestHandler):
 
     def _handle(self, method: str) -> None:
         if not self._authorized():
-            # Unread bodies would desync the connection, so close it instead.
+            # Close the connection, because an unread body desyncs it.
             self.close_connection = True
             return self._send(Response.error(401, "unauthorized"))
 

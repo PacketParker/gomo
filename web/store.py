@@ -18,4 +18,4 @@ def save_json(path, data):
     temporary = f"{path}.tmp"
     with open(temporary, "w") as file:
         json.dump(data, file, indent=2)
-    os.replace(temporary, path)  # atomic: never a half-written file
+    os.replace(temporary, path)  # atomic, so the file is never half-written

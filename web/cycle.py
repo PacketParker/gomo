@@ -1,8 +1,8 @@
-"""Grow-cycle tracking and reminders, carried over from garden-of-eden.
+"""Grow-cycle tracking and reminders.
 
-A cycle is a start date. One-off reminders come due on a set day of the cycle
-and stay until marked done; plant food comes due every FEED_EVERY_DAYS since
-the cycle started or the plants were last fed. The stage follows the day count.
+A cycle is a start date. Each one-off reminder is due on a set day of the cycle
+and stays until it is marked done. Plant food is due FEED_EVERY_DAYS after the
+cycle start or the last feed. The stage follows the day count.
 """
 
 import datetime as dt
@@ -28,11 +28,11 @@ class Cycle:
         self._state = load_json(path, {"started": None, "done": [], "fed": None})
 
     def start(self, started):
-        """Begin a new cycle: every reminder starts fresh."""
+        """Start a new cycle and reset all reminders."""
         self._update(started=_past_date(started).isoformat(), done=[], fed=None)
 
     def set_start(self, started):
-        """Correct the current cycle's start date, keeping what's been done."""
+        """Change the start date of the current cycle. Completed reminders stay done."""
         self._update(started=_past_date(started).isoformat())
 
     def mark_done(self, key):

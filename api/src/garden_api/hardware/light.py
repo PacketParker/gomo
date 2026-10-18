@@ -1,8 +1,8 @@
 """Grow light on a hardware PWM channel, driven through the kernel's sysfs interface.
 
 Requires the ``pwm`` device-tree overlay (``dtoverlay=pwm,pin=18,func=2``).
-Once configured, the PWM peripheral runs on its own: no CPU, no daemon, and the
-light keeps its brightness across service restarts.
+The PWM peripheral runs without the CPU or a daemon. The light keeps its
+brightness when the service restarts.
 """
 
 from __future__ import annotations
@@ -39,8 +39,8 @@ class PwmLight:
         return level
 
     def _resume_or_reset(self) -> float:
-        """Keep the current brightness if the channel already runs at our
-        frequency (e.g. after a service restart), so the light never blinks."""
+        """Keep the current brightness if the channel already runs at this
+        frequency, for example after a service restart. This prevents a blink."""
         if _read(self._dir / "period") == self._period_ns and _read(self._dir / "enable") == 1:
             return round((_read(self._dir / "duty_cycle") or 0) * 100 / self._period_ns)
         _write(self._dir / "duty_cycle", 0)  # must not exceed the new period
@@ -50,7 +50,7 @@ class PwmLight:
 
 
 def _wait_until_writable(path: Path) -> None:
-    """udev grants group access to a freshly exported channel asynchronously."""
+    """udev gives group access to a newly exported channel asynchronously."""
     deadline = time.monotonic() + _PERMISSION_WAIT_SECONDS
     while not os.access(path, os.W_OK) and time.monotonic() < deadline:
         time.sleep(0.02)

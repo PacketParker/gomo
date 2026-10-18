@@ -1,15 +1,8 @@
-"""Status page and controls for a Gardyn running garden-api.
+"""Status page and controls for a Gardyn that runs garden-api.
 
-The page is static HTML; a small script keeps it live over Server-Sent Events.
-While at least one browser is listening, a single background thread polls the
-API and pushes a snapshot to every listener. Buttons post in the background and
-trigger an immediate poll, so changes show up at once. The light/pump
-schedule runs here too (see schedule.py), around the clock, and so does
-grow-cycle tracking with its reminders (see cycle.py).
-
-Environment: GARDEN_URL, GARDEN_API_KEY, TANK_GALLONS (5), WATER_LOW_GALLONS
-(1.5; 0 disables the warning), POLL_SECONDS (2), WATER_POLL_SECONDS (30),
-SCHEDULE_FILE and CYCLE_FILE (schedule.json and cycle.json next to this file).
+While a browser listens, one background thread polls the API and sends each
+snapshot over Server-Sent Events. The schedule (schedule.py) and the grow
+cycle (cycle.py) also run in this process.
 """
 
 import datetime as dt
@@ -28,7 +21,7 @@ from schedule import PRESETS, Scheduler
 API = os.getenv("GARDEN_URL", "http://gardyn.local:5000").rstrip("/")
 HEADERS = {"X-API-Key": key} if (key := os.getenv("GARDEN_API_KEY")) else {}
 TANK_GALLONS = float(os.getenv("TANK_GALLONS", "5"))
-WATER_LOW_GALLONS = float(os.getenv("WATER_LOW_GALLONS", "1.5"))
+WATER_LOW_GALLONS = float(os.getenv("WATER_LOW_GALLONS", "1.5"))  # 0 disables the warning
 POLL_SECONDS = float(os.getenv("POLL_SECONDS", "2"))
 WATER_POLL_SECONDS = float(os.getenv("WATER_POLL_SECONDS", "30"))
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -44,7 +37,7 @@ def same_origin_posts_only():
         "same-origin",
         "none",
     ):
-        abort(403)  # another site's form must not be able to switch the pump on
+        abort(403)  # stop forms on other sites from controlling the garden
 
 
 @app.after_request
@@ -109,7 +102,7 @@ class Live:
                 try:
                     yield updates.get(timeout=15)
                 except queue.Empty:
-                    yield None  # keep-alive, and notices clients that went away
+                    yield None  # keep-alive; also detects disconnected clients
         finally:
             with self._lock:
                 self._listeners.discard(updates)
@@ -137,7 +130,7 @@ class Live:
                 self._snapshot = snapshot
                 for updates in self._listeners:
                     try:
-                        updates.get_nowait()  # a slow client only needs the newest
+                        updates.get_nowait()  # keep only the newest snapshot for a slow client
                     except queue.Empty:
                         pass
                     updates.put_nowait(snapshot)
@@ -164,7 +157,7 @@ def index():
 
 @app.get("/<any('favicon.ico', 'apple-touch-icon.png'):name>")
 def root_icon(name):
-    return app.send_static_file(name)  # browsers and iOS request these from the root by default
+    return app.send_static_file(name)  # browsers request these from the root
 
 
 @app.get("/events")

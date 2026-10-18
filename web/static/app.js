@@ -1,6 +1,6 @@
-// Keeps the page live: snapshots arrive over Server-Sent Events every couple of
-// seconds, the pump countdown ticks locally in between, and buttons post in the
-// background (the next snapshot shows the result).
+// Snapshots arrive over Server-Sent Events. The pump countdown ticks locally
+// between snapshots. Forms post in the background, and the next snapshot shows
+// the result.
 
 const $ = (id) => document.getElementById(id);
 const range = $("light-range");
@@ -90,7 +90,7 @@ function showCycle(cycle) {
 setInterval(() => {
   if (pump?.on && pump.seconds_left > 0) {
     pump.seconds_left -= 1;
-    if (pump.seconds_left === 0) pump.on = false; // the next snapshot confirms
+    if (pump.seconds_left === 0) pump.on = false; // the next snapshot confirms this
     showPump();
   }
 }, 1000);
@@ -109,7 +109,7 @@ range.addEventListener("change", () => {
 document.addEventListener("submit", async (event) => {
   event.preventDefault();
   const form = event.target;
-  // Reminders sit above the sections; their errors show in the cycle panel.
+  // Reminders are outside the sections. Their errors show in the cycle section.
   const error = (form.closest("section") ?? document.querySelector("section.cycle")).querySelector(".error");
   error.textContent = "";
   try {

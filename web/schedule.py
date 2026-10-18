@@ -2,8 +2,8 @@
 
 The presets carry over garden-of-eden's values. The scheduler works out what
 the light should be right now (with the sunrise and sunset fade) and sends it
-only when that changes, so a manual change sticks until the schedule's next
-change. Each pump run is started at its time, and up to two minutes late if the
+only when that changes. A manual light change holds until the next on or off
+time. Each pump run is started at its time, and up to two minutes late if the
 garden was briefly unreachable. Between changes the thread sleeps until the
 next one is due: an on/off time, a pump run, midnight, or the next 1% step of a
 fade. The choice lives in a small JSON file so it survives restarts. Times are
@@ -76,11 +76,22 @@ def light_level(preset, now_minutes):
     return 0
 
 
-def seconds_until_next_change(preset, now):
-    """How long the garden can be left alone: one 1% step during a fade,
-    otherwise until just after the next on/off time, pump run or midnight."""
+def last_light_switch(preset, now):
+    """The most recent on or off time, as a datetime."""
+    times = []
+    for hhmm in (preset.light_on, preset.light_off):
+        hours, minutes = map(int, hhmm.split(":"))
+        t = now.replace(hour=hours, minute=minutes, second=0, microsecond=0)
+        times.append(t if t <= now else t - dt.timedelta(days=1))
+    return max(times)
+
+
+def seconds_until_next_change(preset, now, follow_fade=True):
+    """Seconds until the next action. During a fade that is one 1% step,
+    unless the light is held. Otherwise it is just after the next on/off time,
+    pump run or midnight."""
     now_seconds = now.hour * 3600 + now.minute * 60 + now.second + now.microsecond / 1e6
-    if fading(preset, now_seconds / 60):
+    if follow_fade and fading(preset, now_seconds / 60):
         return preset.fade_minutes * 60 / preset.brightness
     events = (preset.light_on, preset.light_off, *preset.pump_times, "00:00")
     return 0.5 + min((minute_of_day(e) * 60 - now_seconds) % (DAY * 60) or DAY * 60 for e in events)
@@ -98,6 +109,7 @@ class Scheduler:
         self._wake = threading.Event()
         self._state = self._load()
         self._sent_light = None
+        self._held_since = None  # on/off time in effect when the light was set by hand
         self._started_runs = set()
 
     # -- settings
@@ -120,6 +132,14 @@ class Scheduler:
                 self._state["vacation_until"] = end.isoformat()
             self._state.update(preset=preset, enabled=True)
             self._changed()
+
+    def hold_light(self):
+        """Do not change a manually set light until its next on or off time."""
+        with self._lock:
+            preset = PRESETS[self._state["preset"]]
+            self._held_since = last_light_switch(preset, dt.datetime.now())
+            self._sent_light = None  # re-apply once the hold ends
+        self._wake.set()  # recalculate the sleep without fade steps
 
     def status(self):
         with self._lock:
@@ -162,8 +182,11 @@ class Scheduler:
             now_minutes = now.hour * 60 + now.minute + now.second / 60
             changed = failed = False
 
+            held = self._held_since == last_light_switch(preset, now)
+            if not held:
+                self._held_since = None
             level = light_level(preset, now_minutes)
-            if level != self._sent_light:
+            if not held and level != self._sent_light:
                 if self._send("/light/brightness", {"value": level}):
                     self._sent_light, changed = level, True
                 else:
@@ -181,7 +204,7 @@ class Scheduler:
                     else:
                         failed = True
 
-            delay = seconds_until_next_change(preset, now)
+            delay = seconds_until_next_change(preset, now, follow_fade=not held)
             if failed:
                 delay = min(delay, RETRY_SECONDS)
         if changed:
@@ -200,6 +223,7 @@ class Scheduler:
         """Persist, apply the new schedule right away, and update open pages."""
         self._save()
         self._sent_light = None
+        self._held_since = None
         self._wake.set()
         self._on_change()
 

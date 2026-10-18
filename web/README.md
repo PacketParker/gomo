@@ -76,8 +76,9 @@ python -m venv .venv && .venv/bin/pip install -r requirements.txt
   (Germinate, Seedling, Vegetative, Flower, Night, or Vacation until a date,
   after which the previous preset resumes). A background thread sleeps until
   the next scheduled change (an on/off time, a pump run, midnight, or the next
-  1% step of a fade), sets the light only when its scheduled level changes, so
-  manual changes stick until the next one, and starts each pump run on time (up
+  1% step of a fade), sets the light only when its scheduled level changes,
+  leaves a manually set light alone until its next on or off time (fade steps
+  don't count), and starts each pump run on time (up
   to 2 min late if the garden was unreachable). Times use this server's local
   time zone.
 - **Grow cycle.** Start a cycle (or correct its start date) to see the day

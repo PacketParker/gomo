@@ -192,6 +192,8 @@ def control(device):
 
     if error := send(path, body):
         return {"error": error}, 502
+    if device == "light":
+        scheduler.hold_light()
     live.refresh()
     return "", 204
 

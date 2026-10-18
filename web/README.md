@@ -27,9 +27,10 @@ to `compose.yaml` to keep them, and add any variables from the table below to
   container's clock, and that clock is UTC unless you set `TZ`.
 - **State lives in the `data` volume** (`/data/schedule.json` and
   `/data/cycle.json`), so rebuilding the container keeps it. If you
-  bind-mount a host directory there instead, make it writable by the
-  container's user (`chown` it to the uid reported by
-  `docker compose run --rm web id -u`).
+  bind-mount a host directory there instead, it needs to be writable by the
+  container's user.
+- **The app runs as uid/gid 1000**, the usual first user on a Linux host, so
+  files in a bind-mounted directory belong to you.
 - **Run one container only.** The scheduler runs inside the app process, so a
   second copy would run every schedule step twice.
 

@@ -15,10 +15,11 @@ curl -O https://git.pkrm.dev/gomo/plain/web/compose.yaml
 GARDEN_URL=http://192.168.1.50:5000 TZ=America/Chicago docker compose up -d
 ```
 
-Then open `http://<this machine>:8080`. To update, run
-`docker compose build --pull && docker compose up -d`. If you're working from a
-clone, change `build:` to `.` so it builds your local files. Put the settings in a `.env` file next
-to `compose.yaml` to keep them, and add any variables from the table below to
+Then open `http://<this machine>:8080`. To update, run `docker compose up -d`
+again. It rebuilds from the latest commit and replaces the container only if
+something changed. If you're working from a clone, change `build:` to `.` so
+it builds your local files. Put the settings in a `.env` file next to
+`compose.yaml` to keep them, and add any variables from the table below to
 `environment:` in [`compose.yaml`](compose.yaml).
 
 - **Use the Pi's IP address.** `gardyn.local` is an mDNS name, and containers

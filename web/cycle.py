@@ -76,7 +76,11 @@ class Cycle:
             "day": day,
             "stage": next(label for on_day, label in STAGES if day >= on_day),
             "due": [{"key": key, "label": label} for key, label in due],
-            "next": f"{soonest[1]} in {soonest[0]} day{'s' * (soonest[0] != 1)}" if soonest else None,
+            "next": (
+                f"{soonest[1]} in {soonest[0]} day{'s' * (soonest[0] != 1)}"
+                if soonest
+                else None
+            ),
         }
 
     def _update(self, **changes):

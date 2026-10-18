@@ -61,7 +61,9 @@ class Gpio:
         shift = slot * 3
         with self._fsel_lock:  # read-modify-write shared with 9 other pins
             value = self._registers[_FSEL + register]
-            self._registers[_FSEL + register] = value & ~(0b111 << shift) | function << shift
+            self._registers[_FSEL + register] = (
+                value & ~(0b111 << shift) | function << shift
+            )
 
 
 def _check_pin(pin: int) -> None:

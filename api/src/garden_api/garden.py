@@ -36,15 +36,27 @@ class Garden:
         gpio = _try("GPIO", lambda: Gpio(s.gpiomem))
         garden = cls(
             light=_try(
-                "light", lambda: PwmLight(s.light_pwm_chip, s.light_pwm_channel, s.light_frequency)
+                "light",
+                lambda: PwmLight(
+                    s.light_pwm_chip, s.light_pwm_channel, s.light_frequency
+                ),
             ),
-            power=_try("power monitor", lambda: Ina219(s.i2c_bus, s.ina219_address, s.shunt_ohms)),
+            power=_try(
+                "power monitor",
+                lambda: Ina219(s.i2c_bus, s.ina219_address, s.shunt_ohms),
+            ),
             cameras={
                 "upper": Camera(
-                    s.upper_camera_device, s.camera_resolution, s.camera_skip_frames, s.fswebcam
+                    s.upper_camera_device,
+                    s.camera_resolution,
+                    s.camera_skip_frames,
+                    s.fswebcam,
                 ),
                 "lower": Camera(
-                    s.lower_camera_device, s.camera_resolution, s.camera_skip_frames, s.fswebcam
+                    s.lower_camera_device,
+                    s.camera_resolution,
+                    s.camera_skip_frames,
+                    s.fswebcam,
                 ),
             },
         )
@@ -52,13 +64,20 @@ class Garden:
             garden.pump = _try(
                 "pump",
                 lambda: Pump(
-                    gpio, s.pump_pin, s.pump_frequency, s.pump_duty, s.max_pump_run_seconds
+                    gpio,
+                    s.pump_pin,
+                    s.pump_frequency,
+                    s.pump_duty,
+                    s.max_pump_run_seconds,
                 ),
             )
             garden.water = _try(
                 "water-level sensor",
                 lambda: UltrasonicSensor(
-                    gpio, s.distance_trigger_pin, s.distance_echo_pin, s.distance_samples
+                    gpio,
+                    s.distance_trigger_pin,
+                    s.distance_echo_pin,
+                    s.distance_samples,
                 ),
             )
         return garden

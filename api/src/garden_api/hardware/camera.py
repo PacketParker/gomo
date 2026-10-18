@@ -13,7 +13,11 @@ _TIMEOUT_SECONDS = 30
 
 class Camera:
     def __init__(
-        self, device: str, resolution: str, skip_frames: int, executable: str = "fswebcam"
+        self,
+        device: str,
+        resolution: str,
+        skip_frames: int,
+        executable: str = "fswebcam",
     ) -> None:
         self._command = [
             executable, "-q", "-d", device, "--no-banner", "-r", resolution,
@@ -30,6 +34,8 @@ class Camera:
             except (OSError, subprocess.TimeoutExpired) as exc:
                 raise HardwareUnavailable(f"camera capture failed: {exc}") from exc
         if result.returncode != 0 or not result.stdout.startswith(_JPEG_MAGIC):
-            detail = result.stderr.decode(errors="replace").strip() or "no image produced"
+            detail = (
+                result.stderr.decode(errors="replace").strip() or "no image produced"
+            )
             raise HardwareUnavailable(f"camera capture failed: {detail}")
         return result.stdout

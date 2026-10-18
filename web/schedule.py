@@ -32,10 +32,18 @@ class Preset:
 
 
 PRESETS = {
-    "germinate": Preset("Germinate", "06:00", "22:00", 30, 15, ("06:00", "12:00", "18:00"), 3),
-    "seedling": Preset("Seedling", "06:00", "22:00", 50, 15, ("00:00", "08:00", "16:00"), 4),
-    "vegetative": Preset("Vegetative", "06:00", "22:00", 80, 20, ("00:00", "08:00", "16:00"), 5),
-    "flower": Preset("Flower", "07:00", "19:00", 100, 20, ("08:00", "14:00", "20:00"), 5),
+    "germinate": Preset(
+        "Germinate", "06:00", "22:00", 30, 15, ("06:00", "12:00", "18:00"), 3
+    ),
+    "seedling": Preset(
+        "Seedling", "06:00", "22:00", 50, 15, ("00:00", "08:00", "16:00"), 4
+    ),
+    "vegetative": Preset(
+        "Vegetative", "06:00", "22:00", 80, 20, ("00:00", "08:00", "16:00"), 5
+    ),
+    "flower": Preset(
+        "Flower", "07:00", "19:00", 100, 20, ("08:00", "14:00", "20:00"), 5
+    ),
     "night": Preset("Night", "23:00", "07:00", 80, 20, ("02:00", "05:00", "23:15"), 5),
     "vacation": Preset("Vacation", "10:00", "16:00", 50, 0, ("12:00",), 3),
 }
@@ -92,7 +100,9 @@ def seconds_until_next_change(preset, now, follow_fade=True):
     if follow_fade and fading(preset, now_seconds / 60):
         return preset.fade_minutes * 60 / preset.brightness
     events = (preset.light_on, preset.light_off, *preset.pump_times, "00:00")
-    return 0.5 + min((minute_of_day(e) * 60 - now_seconds) % (DAY * 60) or DAY * 60 for e in events)
+    return 0.5 + min(
+        (minute_of_day(e) * 60 - now_seconds) % (DAY * 60) or DAY * 60 for e in events
+    )
 
 
 class Scheduler:
@@ -145,7 +155,9 @@ class Scheduler:
         preset = PRESETS[state["preset"]]
         now = dt.datetime.now()
         now_minutes = now.hour * 60 + now.minute
-        next_run = min(preset.pump_times, key=lambda t: (minute_of_day(t) - now_minutes) % DAY)
+        next_run = min(
+            preset.pump_times, key=lambda t: (minute_of_day(t) - now_minutes) % DAY
+        )
         fade = f", {preset.fade_minutes} min fade" if preset.fade_minutes else ""
         return {
             "enabled": state["enabled"],
@@ -174,7 +186,9 @@ class Scheduler:
         with self._lock:
             self._end_vacation_if_over(now.date())
             if not self._state["enabled"]:
-                self._sent_light = None  # re-apply the light when the schedule is turned on
+                self._sent_light = (
+                    None  # re-apply the light when the schedule is turned on
+                )
                 return None
             preset = PRESETS[self._state["preset"]]
             now_minutes = now.hour * 60 + now.minute + now.second / 60
@@ -191,7 +205,9 @@ class Scheduler:
                     failed = True
 
             today = now.date().isoformat()
-            self._started_runs = {run for run in self._started_runs if run.startswith(today)}
+            self._started_runs = {
+                run for run in self._started_runs if run.startswith(today)
+            }
             for start in preset.pump_times:
                 run = f"{today} {start}"
                 late = (now_minutes - minute_of_day(start)) % DAY
@@ -213,8 +229,14 @@ class Scheduler:
 
     def _end_vacation_if_over(self, today):
         until = self._state["vacation_until"]
-        if self._state["preset"] == "vacation" and until and today > dt.date.fromisoformat(until):
-            self._state.update(preset=self._state["resume"] or "vegetative", vacation_until=None)
+        if (
+            self._state["preset"] == "vacation"
+            and until
+            and today > dt.date.fromisoformat(until)
+        ):
+            self._state.update(
+                preset=self._state["resume"] or "vegetative", vacation_until=None
+            )
             self._save()
 
     def _changed(self):
@@ -226,7 +248,12 @@ class Scheduler:
         self._on_change()
 
     def _load(self):
-        defaults = {"enabled": False, "preset": "vegetative", "vacation_until": None, "resume": None}
+        defaults = {
+            "enabled": False,
+            "preset": "vegetative",
+            "vacation_until": None,
+            "resume": None,
+        }
         state = load_json(self._path, defaults)
         return state if state["preset"] in PRESETS else defaults
 

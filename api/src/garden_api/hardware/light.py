@@ -41,7 +41,10 @@ class PwmLight:
     def _resume_or_reset(self) -> float:
         """Keep the current brightness if the channel already runs at this
         frequency, for example after a service restart. This prevents a blink."""
-        if _read(self._dir / "period") == self._period_ns and _read(self._dir / "enable") == 1:
+        if (
+            _read(self._dir / "period") == self._period_ns
+            and _read(self._dir / "enable") == 1
+        ):
             return round((_read(self._dir / "duty_cycle") or 0) * 100 / self._period_ns)
         _write(self._dir / "duty_cycle", 0)  # must not exceed the new period
         _write(self._dir / "period", self._period_ns)

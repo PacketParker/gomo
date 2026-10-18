@@ -87,7 +87,9 @@ class Api:
         return self._light(_level(body))
 
     def _light(self, level: float) -> Response:
-        return Response.json({"value": _require(self._garden.light, "light").set_level(level)})
+        return Response.json(
+            {"value": _require(self._garden.light, "light").set_level(level)}
+        )
 
     # -- pump
 
@@ -153,13 +155,21 @@ def _parse_body(body: bytes) -> Json:
 
 def _level(body: Json) -> float:
     value = body.get("value")
-    if isinstance(value, bool) or not isinstance(value, (int, float)) or not 0 <= value <= 100:
+    if (
+        isinstance(value, bool)
+        or not isinstance(value, (int, float))
+        or not 0 <= value <= 100
+    ):
         raise BadRequest("'value' must be a number between 0 and 100")
     return value
 
 
 def _integer(body: Json, key: str, low: int, high: int) -> int:
     value = body.get(key)
-    if not isinstance(value, int) or isinstance(value, bool) or not low <= value <= high:
+    if (
+        not isinstance(value, int)
+        or isinstance(value, bool)
+        or not low <= value <= high
+    ):
         raise BadRequest(f"'{key}' must be an integer between {low} and {high}")
     return value

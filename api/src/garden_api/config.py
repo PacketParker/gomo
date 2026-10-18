@@ -83,5 +83,7 @@ class Settings:
             try:
                 values[field.name] = _PARSERS[str(field.type)](raw)
             except ValueError:
-                raise ValueError(f"{name}={raw!r} is not a valid {field.type}") from None
+                raise ValueError(
+                    f"{name}={raw!r} is not a valid {field.type}"
+                ) from None
         return cls(**values)

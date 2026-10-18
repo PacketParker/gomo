@@ -18,7 +18,9 @@ _HALF_SPEED_OF_SOUND_CM_S = 17150
 
 
 class UltrasonicSensor:
-    def __init__(self, gpio: Gpio, trigger_pin: int, echo_pin: int, samples: int) -> None:
+    def __init__(
+        self, gpio: Gpio, trigger_pin: int, echo_pin: int, samples: int
+    ) -> None:
         self._gpio = gpio
         self._trigger = trigger_pin
         self._echo = echo_pin

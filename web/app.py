@@ -21,7 +21,9 @@ from schedule import PRESETS, Scheduler
 API = os.getenv("GARDEN_URL", "http://gardyn.local:5000").rstrip("/")
 HEADERS = {"X-API-Key": key} if (key := os.getenv("GARDEN_API_KEY")) else {}
 TANK_GALLONS = float(os.getenv("TANK_GALLONS", "5"))
-WATER_LOW_GALLONS = float(os.getenv("WATER_LOW_GALLONS", "1.5"))  # 0 disables the warning
+WATER_LOW_GALLONS = float(
+    os.getenv("WATER_LOW_GALLONS", "1.5")
+)  # 0 disables the warning
 POLL_SECONDS = float(os.getenv("POLL_SECONDS", "2"))
 WATER_POLL_SECONDS = float(os.getenv("WATER_POLL_SECONDS", "30"))
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -33,7 +35,9 @@ app = Flask(__name__)
 
 @app.before_request
 def same_origin_posts_only():
-    if request.method == "POST" and request.headers.get("Sec-Fetch-Site", "same-origin") not in (
+    if request.method == "POST" and request.headers.get(
+        "Sec-Fetch-Site", "same-origin"
+    ) not in (
         "same-origin",
         "none",
     ):
@@ -42,7 +46,9 @@ def same_origin_posts_only():
 
 @app.after_request
 def no_framing(response):
-    response.headers["Content-Security-Policy"] = "frame-ancestors 'none'"  # no clickjacking
+    response.headers["Content-Security-Policy"] = (
+        "frame-ancestors 'none'"  # no clickjacking
+    )
     return response
 
 
@@ -115,7 +121,10 @@ class Live:
                     self._running, self._snapshot = False, None
                     return
             if time.monotonic() >= water_due:
-                water, water_due = water_reading(), time.monotonic() + WATER_POLL_SECONDS
+                water, water_due = (
+                    water_reading(),
+                    time.monotonic() + WATER_POLL_SECONDS,
+                )
             snapshot = json.dumps(
                 {
                     "light": fetch("/light/brightness"),
@@ -139,7 +148,9 @@ class Live:
 
 
 live = Live()
-scheduler = Scheduler(SCHEDULE_FILE, send=lambda *a: send(*a) is None, on_change=live.refresh)
+scheduler = Scheduler(
+    SCHEDULE_FILE, send=lambda *a: send(*a) is None, on_change=live.refresh
+)
 scheduler.start()
 cycle = Cycle(CYCLE_FILE)
 
@@ -231,8 +242,14 @@ def photo(camera):
         response.raise_for_status()
     except requests.RequestException:
         return "", 503
-    return Response(response.content, mimetype="image/jpeg", headers={"Cache-Control": "no-store"})
+    return Response(
+        response.content, mimetype="image/jpeg", headers={"Cache-Control": "no-store"}
+    )
 
 
 if __name__ == "__main__":
-    app.run(host=os.getenv("HOST", "0.0.0.0"), port=int(os.getenv("PORT", "8080")), threaded=True)
+    app.run(
+        host=os.getenv("HOST", "0.0.0.0"),
+        port=int(os.getenv("PORT", "8080")),
+        threaded=True,
+    )

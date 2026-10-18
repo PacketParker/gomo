@@ -30,7 +30,9 @@ class GardenServer(ThreadingHTTPServer):
 
 class RequestHandler(BaseHTTPRequestHandler):
     server: GardenServer
-    protocol_version = "HTTP/1.1"  # keep-alive, so there is no TCP handshake per request
+    protocol_version = (
+        "HTTP/1.1"  # keep-alive, so there is no TCP handshake per request
+    )
     disable_nagle_algorithm = True  # send small responses without delay
     timeout = IDLE_TIMEOUT_SECONDS
     server_version = "garden-api"
@@ -69,7 +71,9 @@ class RequestHandler(BaseHTTPRequestHandler):
 
     def _content_length(self) -> int | None:
         raw = self.headers.get("Content-Length", "0")
-        if not (raw.isascii() and raw.isdigit()):  # rejects signs, spaces, non-ASCII digits
+        if not (
+            raw.isascii() and raw.isdigit()
+        ):  # rejects signs, spaces, non-ASCII digits
             return None
         return int(raw)
 

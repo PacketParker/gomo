@@ -86,7 +86,9 @@ python -m venv .venv && .venv/bin/pip install -r requirements.txt
 - **Grow cycle.** Start a cycle (or correct its start date) to see the day
   and stage, with reminders carried over from garden-of-eden: thin at day 14,
   check roots at day 21, harvest at day 35, and plant food 7 days after the
-  start or the last feeding. Each reminder stays until marked done.
+  start or the last feeding (1/4 per gallon at 4 gallons the first time, then
+  1/2 per gallon at 5 gallons with 1 tbsp of H2O2 per gallon). Each reminder
+  stays until marked done.
 - **Photos are proxied**, so the API key never reaches the browser, and only
   refresh on a page reload.
 - Behind nginx, response buffering must be off for `/events`; the app sends

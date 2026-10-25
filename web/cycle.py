@@ -17,6 +17,8 @@ REMINDERS = {  # key: (day of the cycle, label)
 }
 FEED = "feed"
 FEED_LABEL = "Add plant food"
+FIRST_FEED_LABEL = "Add plant food. 1/4 per gal. 4 gal."
+LATER_FEED_LABEL = "Add plant food. 1/2 per gal. 1 tbsp H2O2 per gal. 5 gal."
 FEED_EVERY_DAYS = 7
 STAGES = ((35, "Harvest"), (21, "Root check"), (14, "Thinning"), (0, "Germination"))
 
@@ -66,7 +68,7 @@ class Cycle:
             else:
                 upcoming.append((on_day - day, label))
         if day >= feed_day:
-            due.append((FEED, FEED_LABEL))
+            due.append((FEED, LATER_FEED_LABEL if state["fed"] else FIRST_FEED_LABEL))
         else:
             upcoming.append((feed_day - day, FEED_LABEL))
 

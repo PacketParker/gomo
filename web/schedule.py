@@ -2,9 +2,11 @@
 
 The thread sends the scheduled light level, with a fade at the on and off
 times, only when the level changes. A manual light change holds until the next
-on or off time. Each pump run starts at its time, or up to two minutes late if
-the garden does not respond. Between changes, the thread sleeps until the next
-on/off time, pump run, midnight or 1% fade step. The selection is saved to a
+on or off time, or until the next on time if the light was turned off. If
+the hold ends at the off time, the fade starts from the manual level. Each
+pump run starts at its time, or up to two minutes late if the garden does not
+respond. Between changes, the thread sleeps until the next on/off time, pump
+run, midnight or 1% fade step. The selection is saved to a
 JSON file. Times use the server's local time zone.
 """
 
@@ -68,9 +70,15 @@ def fading(preset, now_minutes):
     return since_on < min(fade, window) or 0 <= since_on - window < fade
 
 
-def light_level(preset, now_minutes):
+def fading_off(preset, now_minutes):
+    since_on, window = _light_position(preset, now_minutes)
+    return 0 <= since_on - window < preset.fade_minutes
+
+
+def light_level(preset, now_minutes, fade_off_from=None):
     """Scheduled brightness at ``now_minutes`` past midnight.
-    The fade starts at the on and off times."""
+    The fade starts at the on and off times. The off fade starts from
+    ``fade_off_from`` if given, else from the preset brightness."""
     since_on, window = _light_position(preset, now_minutes)
     fade = preset.fade_minutes
     if since_on < min(fade, window):
@@ -78,18 +86,19 @@ def light_level(preset, now_minutes):
     if since_on < window:
         return preset.brightness
     if since_on - window < fade:
-        return round(preset.brightness * (1 - (since_on - window) / fade))
+        start = preset.brightness if fade_off_from is None else fade_off_from
+        return round(start * (1 - (since_on - window) / fade))
     return 0
 
 
-def last_light_switch(preset, now):
-    """The most recent on or off time, as a datetime."""
-    times = []
-    for hhmm in (preset.light_on, preset.light_off):
+def next_time(now, times):
+    """The soonest of the HH:MM ``times`` after ``now``, as a datetime."""
+    upcoming = []
+    for hhmm in times:
         hours, minutes = map(int, hhmm.split(":"))
         t = now.replace(hour=hours, minute=minutes, second=0, microsecond=0)
-        times.append(t if t <= now else t - dt.timedelta(days=1))
-    return max(times)
+        upcoming.append(t if t > now else t + dt.timedelta(days=1))
+    return min(upcoming)
 
 
 def seconds_until_next_change(preset, now, follow_fade=True):
@@ -117,7 +126,9 @@ class Scheduler:
         self._wake = threading.Event()
         self._state = self._load()
         self._sent_light = None
-        self._held_since = None  # on/off time in effect when the light was set by hand
+        self._held_until = None  # when a light set by hand goes back to the schedule
+        self._held_level = None  # the level set by hand
+        self._fade_off_from = None  # the off fade's start level, after a hold
         self._started_runs = set()
 
     # -- settings
@@ -141,11 +152,18 @@ class Scheduler:
             self._state.update(preset=preset, enabled=True)
             self._changed()
 
-    def hold_light(self):
-        """Do not change a manually set light until its next on or off time."""
+    def hold_light(self, level):
+        """Do not change a manually set light until its next on or off time.
+        A light turned off stays off through the off time until the next on time."""
         with self._lock:
             preset = PRESETS[self._state["preset"]]
-            self._held_since = last_light_switch(preset, dt.datetime.now())
+            times = (
+                (preset.light_on,)
+                if level == 0
+                else (preset.light_on, preset.light_off)
+            )
+            self._held_until = next_time(dt.datetime.now(), times)
+            self._held_level = level
             self._sent_light = None  # re-apply once the hold ends
         self._wake.set()  # recalculate the sleep without fade steps
 
@@ -194,10 +212,14 @@ class Scheduler:
             now_minutes = now.hour * 60 + now.minute + now.second / 60
             changed = failed = False
 
-            held = self._held_since == last_light_switch(preset, now)
+            held = self._held_until is not None and now < self._held_until
             if not held:
-                self._held_since = None
-            level = light_level(preset, now_minutes)
+                if self._held_until is not None:  # the hold just ended
+                    self._held_until = None
+                    self._fade_off_from = self._held_level
+                if not fading_off(preset, now_minutes):
+                    self._fade_off_from = None
+            level = light_level(preset, now_minutes, self._fade_off_from)
             if not held and level != self._sent_light:
                 if self._send("/light/brightness", {"value": level}):
                     self._sent_light, changed = level, True
@@ -243,7 +265,8 @@ class Scheduler:
         """Save, apply the new schedule immediately, and update open pages."""
         self._save()
         self._sent_light = None
-        self._held_since = None
+        self._held_until = None
+        self._fade_off_from = None
         self._wake.set()
         self._on_change()
 

@@ -80,9 +80,10 @@ python -m venv .venv && .venv/bin/pip install -r requirements.txt
   the next scheduled change (an on/off time, a pump run, midnight, or the next
   1% step of a fade), sets the light only when its scheduled level changes,
   leaves a manually set light alone until its next on or off time (fade steps
-  don't count), and starts each pump run on time (up
-  to 2 min late if the garden was unreachable). Times use this server's local
-  time zone.
+  don't count; a light turned off stays off until the next on time, and a
+  dimmed light fades off from its own level), and starts each pump run on
+  time (up to 2 min late if the garden was unreachable). Times use this
+  server's local time zone.
 - **Grow cycle.** Start a cycle (or correct its start date) to see the day
   and stage, with reminders carried over from garden-of-eden: thin at day 14,
   check roots at day 21, harvest at day 35, and plant food 7 days after the
